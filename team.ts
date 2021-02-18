@@ -2,18 +2,24 @@
  * Stores information about a single team
  */
 class Team {
+
+    id: string;
     name: string;
     group: string;
+
     private _matches: number = 0;
     private _points: number = 0;
     private _wins: number = 0;
     private _loses: number = 0;
     private _wonSets: number = 0;
     private _lostSets: number = 0;
+    private _withdrawals: number = 0;
+    private _form: number[] = [];
 
-    constructor(theName: string, theGroup: string) {
+    constructor(theId: string, theName: string, theGroup: string) {
+        this.id = theId;
         this.name = theName;
-        this.group = theGroup.toLowerCase().trim();
+        this.group = theGroup;
     }
 
     get matches(): number {
@@ -58,11 +64,25 @@ class Team {
         this._lostSets = val;
     }
 
-    get setDifference(): number {
+    get withdrawals(): number {
+        return this._withdrawals;
+    }
+    set withdrawals(val: number) {
+        this._withdrawals = val;
+    }
+
+    get form(): number[] {
+        return this._form;
+    }
+    setTeamForm(val: number) {
+        this._form.push(val);
+    }
+
+    get setsDifference(): number {
         return this.wonSets - this.lostSets;
     }
 
     isInGroup(group: string): boolean {
-        return this.group === group.toLowerCase().trim();
+        return this.group.toLowerCase().trim() === group.toLowerCase().trim();
     }
 }
