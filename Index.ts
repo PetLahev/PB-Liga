@@ -1,3 +1,19 @@
+function showForm() {
+  let template =  HtmlService.createTemplateFromFile('uiform');
+  let html = template.evaluate();
+  html.setTitle("PB Liga");
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
+function appendData(data) {
+  let wkb = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = wkb.getSheetByName("Tabulka");
+  let range = sheet.getRange(25,1);
+  range.setValue(data[0]);
+  range.offset(1,0).setValue(data[1]);
+  range.offset(2,0).setValue(data[2]);
+}
+
 function testMatch() {
   let wkb = SpreadsheetApp.getActiveSpreadsheet();
   let matches = wkb.getRangeByName('Zapasy').getValues();

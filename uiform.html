@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="input-field col s12">
+                <i class="material-icons prefix">date_range</i>
+                <input id="matchDate" type="text" class="datepicker">
+                <label for="matchDate">Datum:</label>
+            </div>
+            <div class="input-field col s12">
+                <i class="material-icons prefix">alarm</i>
+                <input id="matchTime" type="text" class="timepicker">
+                <label for="matchTime">Čas:</label>
+            </div>
+            <div class="input-field col s12">
+                <i class="material-icons prefix">place</i>
+                <input id="lblPlace" type="text" class="validate">
+                <label for="lblPlace">Místo:</label>
+            </div>
+            <div class="input-field col s12">
+                <button id="btnSubmit" class="waves-effect waves-light btn red"><i
+                        class="material-icons left">save</i>Uložit</button>
+            </div>
+        </div>
+    </div>
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var dates = document.querySelectorAll('.datepicker');
+            var dateInstances = M.Datepicker.init(dates);
+            var times = document.querySelectorAll('.timepicker');
+            var timeInstances = M.Timepicker.init(times, {
+                twelveHour: false
+            });
+        });
+
+        var mDate = document.getElementById('matchDate');
+        var mTime = document.getElementById('matchTime');
+        var mPlace = document.getElementById('lblPlace');
+
+        document.getElementById('btnSubmit').addEventListener("click", onSubmit);
+        function onSubmit() {
+            var data = [];
+            data.push(mDate.value);
+            data.push(mTime.value);
+            data.push(mPlace.value);
+            google.script.run.withSuccessHandler(onSuccess)
+                .withFailureHandler(onFailed)
+                .appendData(data);
+        }
+
+        function onSuccess(msg) {
+            if (msg) alert(msg);
+        }
+
+        function onFailed(errors) {
+            alert(errors.toString());
+        }
+
+    </script>
+</body>
+
+</html>
