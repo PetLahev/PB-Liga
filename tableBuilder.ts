@@ -20,9 +20,8 @@ class TableBuilder {
 
     private groups: string[] = [];
     private teams: Team[] = [];
-    private sheet: any;
-    private wkb: any;
     private matches: Match[];
+    private wkb: any;
     private initError: boolean = false;
 
     /**
@@ -41,9 +40,9 @@ class TableBuilder {
         }
         if (this.initError) return;
 
-        this.sheet = teamsRng.getSheet();
-        let numOfTeams = this.getNumOfTeams(teamsRng, this.sheet);
-        let teamsRange = this.getTeamFullRange(teamsRng, this.sheet, numOfTeams);
+        let sheet = teamsRng.getSheet();
+        let numOfTeams = this.getNumOfTeams(teamsRng, sheet);
+        let teamsRange = this.getTeamFullRange(teamsRng, sheet, numOfTeams);
         let teamsData: string[][] = teamsRange.getValues();
         for (let index = 0; index < teamsData.length; index++) {
             let teamInfo = teamsData[index];
@@ -63,7 +62,7 @@ class TableBuilder {
     buildTable(): void {
 
         if (this.initError) return;
-        let error: boolean;
+        let error: boolean = false;
         try {
             let draw = this.wkb.getRangeByName(DRAW).getValues();
             this.matches = [];
@@ -76,87 +75,143 @@ class TableBuilder {
         }
         if (error) return;
 
-        for (let index = 0; index < this.teams.length; index++) {
-            let team = this.teams[index];
-            Logger.log('Prochazim vysledku tymu:' + team.name);
-            let teamMatches = this.matches.filter(t => t.homeTeam == team.name || t.awayTeam == team.name);
-            if (teamMatches.length > 0) {
-                for (let i = 0; i < teamMatches.length; i++) {
-                    let match = teamMatches[i];
-                    if (!match.isFinished()) continue;
-
-                    let isHomeTeam = match.isHomeTeam(team.name);
-                    let hasTeamLost = isHomeTeam !== match.hasHomeWon(); // XOR in Javascript
-                    Logger.log('Zapas: ' + match.homeTeam + "-" + match.awayTeam + ' ' + match.homeTeamScore + ':' + match.awayTeamScore);
-                    if (!match.isWithdrawal()) {
-                        team.matches += 1;
-                        team.setTeamForm(hasTeamLost ? -1 : 1);
-                        team.wins += hasTeamLost ? 0 : 1;
-                        team.loses += hasTeamLost ? 1 : 0;
-                        team.wonSets += isHomeTeam ? match.homeTeamScore : match.awayTeamScore;
-                        team.lostSets += isHomeTeam ? match.awayTeamScore : match.homeTeamScore;
-                        team.points += this.calculatePoints(false, !hasTeamLost, Math.abs(match.homeTeamScore - match.awayTeamScore));
-                    }
-                    else {
-                        // withdrawal
-                        team.matches += 1;
-                        let thisTeamWithdrawn: boolean;
-                        if (match.hasBothTeamsWithdrawal()) {
-                            thisTeamWithdrawn = true;
-                        }
-                        else{
-                            thisTeamWithdrawn = !(isHomeTeam !== match.hasHomeWithdrawal());
-                        }
-                        team.withdrawals += thisTeamWithdrawn ? 1 : 0;
-                        team.setTeamForm(thisTeamWithdrawn ? -1 : 1);
-                        team.wins += thisTeamWithdrawn ? 0 : 1;
-                        team.loses += thisTeamWithdrawn ? 1 : 0;
-                        team.wonSets += thisTeamWithdrawn ? 0 : 3;
-                        team.lostSets += thisTeamWithdrawn ? 3 : 0;
-                        team.points += this.calculatePoints(thisTeamWithdrawn, !thisTeamWithdrawn, Math.abs(match.homeTeamScore - match.awayTeamScore));
-                    }
-                    Logger.log('Z:' + team.matches + ',Body:' + team.points + ",V:" + team.wins + ',P:' + team.loses + ',SV:' + team.wonSets + ',SP:' + team.lostSets + ',S:' + team.withdrawals);
-                }
-            }
-        }
+        // collect info for each team
+        this.collectTeamsInfo();
 
         // get team for each group
         this.groups.forEach(group => {
             var teamsForGroup = this.teams.filter(t => t.group == group);
-            //TODO: finish the full calculation for all table cases
-            teamsForGroup.sort((a, b) => b.setsDifference - a.setsDifference);
-            teamsForGroup.sort((a, b) => b.points - a.points);
+            this.calculateTeamsPosition(teamsForGroup);
 
             // build the array that will be inserted to the sheet
+            let table = this.buildTableArray(group, teamsForGroup);
+
             let tableTopCell = this.wkb.getRangeByName(TABLE_PREFIX + group);
-            let tblFirstRowIndex = tableTopCell.getRow();
             let tblLastColIndex = tableTopCell.getLastColumn();
-            let tblRows = [];;
-            let i: number = 0;
-            let tablePosition: number = 1;
-            teamsForGroup.forEach(team => {
-                let tblCols: any = [];
-                tblCols.push(tablePosition);
-                tblCols.push(team.name);
-                tblCols.push(team.matches);
-                tblCols.push(team.points);
-                tblCols.push(team.wins);
-                tblCols.push(team.loses);
-                tblCols.push(team.wonSets);
-                tblCols.push(team.lostSets);
-                tblCols.push(team.setsDifference);
-                tblCols.push(team.withdrawals);
-                this.ensureTeamFormData(team);
-                tblCols.push(this.createSparklineFormula(tblFirstRowIndex + i, tblLastColIndex + 2));
-                tblCols.push(team.form[team.form.length - 3]);
-                tblCols.push(team.form[team.form.length - 2]);
-                tblCols.push(team.form[team.form.length - 1]);
-                tblRows.push(tblCols);
-                tablePosition++; i++;
-            });
             let tblSheet = tableTopCell.getSheet();
-            tblSheet.getRange(tableTopCell.getRow(), tableTopCell.getColumn(), tblRows.length, tblRows[0].length).setValues(tblRows);
+            tblSheet.getRange(tableTopCell.getRow(), tableTopCell.getColumn(), table.length, table[0].length).setValues(table);
             tblSheet.hideColumns(tblLastColIndex + 2, 3);
+        });
+    }
+
+    /**
+     * THIS IS VERY IMPORTANT - make sure you know what you do
+     * Calculates the position of each team in a table.
+     * First sort it according to points for each team
+     * @param teamsForGroup result of all teams of one group
+     */
+    private calculateTeamsPosition(teamsForGroup: Team[]) {
+        //TODO: finish the full calculation for all table cases
+        /*e.g. mini table of matches between teams with same points
+               if there are more than two teams with the same amount of points
+               build a mini-table of those teams and compare their points then
+               difference between sets then number of won sets in their face to face matches
+               if the above cannot decide then compare difference between wins and loses in WHOLE group
+               then number of wins in WHOLE group then sets difference in WHOLE group then number
+               of winning sets in WHOLE group then who was registered earlier
+        */
+        teamsForGroup.sort((a, b) => b.setsDifference - a.setsDifference);
+        teamsForGroup.sort((a, b) => b.points - a.points);
+    }
+
+    private buildTableArray(group: string, teamsForGroup: Team[]): string[] {
+
+        // build the array that will be inserted to the sheet
+        let tableTopCell: any;
+        let error: boolean = false;
+        try {
+            tableTopCell = this.wkb.getRangeByName(TABLE_PREFIX + group);
+        } catch (error) {
+            Logger.log('CHYBA: Tabulka skupiny ' + group + ' neexistuje!');
+            error = true;
+        }
+        if (error) return;
+
+        let tblFirstRowIndex = tableTopCell.getRow();
+        let tblLastColIndex = tableTopCell.getLastColumn();
+        let tblRows = [];;
+        let i: number = 0;
+        let tablePosition: number = 1;
+        teamsForGroup.forEach(team => {
+            let tblCols: any = [];
+            tblCols.push(tablePosition);
+            tblCols.push(team.name);
+            tblCols.push(team.matches);
+            tblCols.push(team.points);
+            tblCols.push(team.wins);
+            tblCols.push(team.loses);
+            tblCols.push(team.wonSets);
+            tblCols.push(team.lostSets);
+            tblCols.push(team.setsDifference);
+            tblCols.push(team.withdrawals);
+            this.ensureTeamFormData(team);
+            tblCols.push(this.createSparklineFormula(tblFirstRowIndex + i, tblLastColIndex + 2));
+            tblCols.push(team.form[team.form.length - 3]);
+            tblCols.push(team.form[team.form.length - 2]);
+            tblCols.push(team.form[team.form.length - 1]);
+            tblRows.push(tblCols);
+            tablePosition++; i++;
+        });
+        return tblRows;
+    }
+
+    /**
+     * Iterates through teams and for each of them collect their matches
+     * and then calls method for collecting team results.
+     */
+    private collectTeamsInfo(): void {
+
+        this.teams.forEach(team => {
+            Logger.log('Prochazim vysledku tymu:' + team.name);
+            let teamMatches = this.matches.filter(t => t.homeTeam == team.name || t.awayTeam == team.name);
+            if (teamMatches.length <= 0) return;
+            this.collectTeamMatchesInfo(team, teamMatches);
+        });
+    }
+
+    /**
+     * Iterates through each match of the team and collects information and calculate points for the team.
+     * Handles withdrawals, wins, loses
+     * @param team the team to get results for
+     * @param teamMatches all matches of the given team
+     */
+    private collectTeamMatchesInfo(team: Team, teamMatches: Match[]): void {
+
+        teamMatches.forEach(match => {
+            if (!match.isFinished()) return;
+
+            let isHomeTeam = match.isHomeTeam(team.name);
+            let hasTeamLost = isHomeTeam !== match.hasHomeWon(); // XOR in Javascript
+            Logger.log('Zapas: ' + match.homeTeam + "-" + match.awayTeam + ' ' + match.homeTeamScore + ':' + match.awayTeamScore);
+
+            if (!match.isWithdrawal()) {
+                team.matches += 1;
+                team.setTeamForm(hasTeamLost ? -1 : 1);
+                team.wins += hasTeamLost ? 0 : 1;
+                team.loses += hasTeamLost ? 1 : 0;
+                team.wonSets += isHomeTeam ? match.homeTeamScore : match.awayTeamScore;
+                team.lostSets += isHomeTeam ? match.awayTeamScore : match.homeTeamScore;
+                team.points += this.calculatePoints(false, !hasTeamLost, Math.abs(match.homeTeamScore - match.awayTeamScore));
+            }
+            else {
+                // withdrawal
+                team.matches += 1;
+                let thisTeamWithdrawn: boolean;
+                if (match.hasBothTeamsWithdrawal()) {
+                    thisTeamWithdrawn = true;
+                }
+                else {
+                    thisTeamWithdrawn = !(isHomeTeam !== match.hasHomeWithdrawal());
+                }
+                team.withdrawals += thisTeamWithdrawn ? 1 : 0;
+                team.setTeamForm(thisTeamWithdrawn ? -1 : 1);
+                team.wins += thisTeamWithdrawn ? 0 : 1;
+                team.loses += thisTeamWithdrawn ? 1 : 0;
+                team.wonSets += thisTeamWithdrawn ? 0 : 3;
+                team.lostSets += thisTeamWithdrawn ? 3 : 0;
+                team.points += this.calculatePoints(thisTeamWithdrawn, !thisTeamWithdrawn, Math.abs(match.homeTeamScore - match.awayTeamScore));
+            }
+            Logger.log('Z:' + team.matches + ',Body:' + team.points + ",V:" + team.wins + ',P:' + team.loses + ',SV:' + team.wonSets + ',SP:' + team.lostSets + ',S:' + team.withdrawals);
         });
     }
 
@@ -194,6 +249,11 @@ class TableBuilder {
         return 0;
     }
 
+    /**
+     * Ensures that the given team has at least three last matches stored.
+     * If not a '0' (zero) will be added to the array so the internal logic will work.
+     * @param team the team for which to ensure data in the form array
+     */
     private ensureTeamFormData(team: Team): void {
         // if there are not three matches yet, fill it with zeros
         let numOfFormRecords = team.form.length;
@@ -205,41 +265,20 @@ class TableBuilder {
         }
     }
 
+    /**
+     * Returns a string that represents 'SPARKLINE' formula in Google Spreadsheet
+     * with the 'winloss' chart. Assumes the data are stored in three columns at the same row.
+     * @param rowIndex the index of row where the formula will be placed
+     * @param firstSparklineColIndex the first column where the sparkline data starts.
+     *                               It assumes that just three values will be part of the formula.
+     *                               If formula will be inserted to A1, the value of this parameter must be >1
+     */
     private createSparklineFormula(rowIndex: number, firstSparklineColIndex: number): string {
         let formula = "=SPARKLINE([address]; {\"charttype\"\\\"winloss\"; \"negcolor\"\\\"red\"; \"color\"\\\"green\"})";
         let lastColIndex = firstSparklineColIndex + 2;
         let address = "R" + rowIndex + "C" + firstSparklineColIndex + ":R" + rowIndex + "C" + lastColIndex;
         formula = formula.replace("[address]", address);
         return formula;
-    }
-    /**
-     * Inserts winloss sparkline chart to given cell.
-     * The chart shows up last three matches if there are not three matches yet
-     * it will fill it with '0'. A helper cells are used to store the data.
-     * @param chartCell a cell where the sparkline chart should be added
-     * @param team the team for which to display its form
-     */
-    private addTeamFormChart(chartCell: any, team: Team) {
-        let formula = "=SPARKLINE([address]; {\"charttype\"\\\"winloss\"; \"negcolor\"\\\"red\"; \"color\"\\\"green\"})";
-        // if there are not three matches yet, fill it with zeros
-        let numOfFormRecords = team.form.length;
-        if (numOfFormRecords < 3) {
-            let steps = 3 - numOfFormRecords;
-            for (let index = 0; index < steps; index++) {
-                team.setTeamForm(0);
-            }
-        }
-        // insert last three matches
-        let form = team.form;
-        chartCell.offset(0, 1).setValue(form.length - 1);
-        chartCell.offset(0, 2).setValue(form.length - 2);
-        chartCell.offset(0, 3).setValue(form.length - 3);
-
-        let sheet = chartCell.getSheet();
-        var data = sheet.getRange(chartCell.getRow(), chartCell.offset(0, 1).getColumn(), 1, 3);
-        sheet.hideColumns(data.getColumn(), 3);
-        formula = formula.replace("[address]", data.getA1Notation());
-        chartCell.setFormula(formula);
     }
 
     private getNumOfTeams(teams: any, sheet: any): number {
