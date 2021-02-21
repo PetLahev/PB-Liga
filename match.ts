@@ -7,6 +7,7 @@ const WITHDRAWAL_STRING: string = "S";
  * Stores information about one match (one row).
  */
 class Match {
+    matchFirstCol: string;
     matchOrder: string;
     round: string;
     matchDate: Date;
@@ -23,7 +24,8 @@ class Match {
      * Processes the match info and stores relevant information.
      * @param matchRow the information about the match as an array of information
      */
-    constructor(matchRow: any[]) {
+    constructor(matchRow: any[], matchAddress: string) {
+        this.matchFirstCol = matchAddress;
         this.matchOrder = matchRow[0];
         this.round = matchRow[1];
         this.matchDate = matchRow[2];
@@ -43,6 +45,10 @@ class Match {
         }
     }
 
+    get firstColumnAddress(): string {
+        return this.matchFirstCol;
+    }
+
     private validateScore(value: any): number {
         if ((value != '' || value == 0) && !isNaN(value)) {
             return Number(value);
@@ -59,6 +65,14 @@ class Match {
      */
     isHomeTeam(teamName: string): boolean {
         return this.homeTeam == teamName;
+    }
+
+    /**
+     * Returns true if the given team is part of the match
+     * @param teamName name of the team to find
+     */
+    isTeamIncluded(teamName: string): boolean {
+        return this.homeTeam == teamName || this.awayTeam == teamName;
     }
 
     /**

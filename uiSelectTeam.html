@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="cboTeam" required>
+                    <option value="" disabled selected>Vyberte tým</option>
+                    <? for(var i=0;i<teams.length;i++) { ?>
+                        <option><?= teams[i] ?></option>
+                    <? } ?>
+                </select>
+                <label>Tým:</label>
+            </div>
+            <div class="input-field col s12">
+                <button id="btnSubmit" class="waves-effect waves-light btn red">Filtrovat</button>
+            </div>
+        </div>
+    </div>
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var selects = document.querySelectorAll('select');
+            var selectInstances = M.FormSelect.init(selects);
+        });
+
+        var team = document.getElementById('cboTeam');
+
+        document.getElementById('btnSubmit').addEventListener("click", onSubmit);
+        function onSubmit() {
+            console.log('On submit');
+            var data = [];
+            data.push(team.value);
+            google.script.run.withSuccessHandler(onSuccess)
+                .withFailureHandler(onFailed)
+                .validateSelectedTeam(data);
+        }
+
+        function onSuccess(msg) {
+            console.log('About to close the dialog');
+            google.script.host.close();
+        }
+
+        function onFailed(errors) {
+            alert(errors.toString());
+        }
+
+    </script>
+</body>
+
+</html>

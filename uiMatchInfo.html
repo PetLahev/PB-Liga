@@ -13,19 +13,22 @@
 <body>
     <div class="container">
         <div class="row">
+            <div class="input-field col s12"></div>
+                <h4><?= matchTeams ?>
+            </div>
             <div class="input-field col s12">
                 <i class="material-icons prefix">date_range</i>
-                <input id="matchDate" type="text" class="datepicker">
+                <input id="matchDate" type="text" class="datepicker" value=<?= matchDate ?>>
                 <label for="matchDate">Datum:</label>
             </div>
             <div class="input-field col s12">
                 <i class="material-icons prefix">alarm</i>
-                <input id="matchTime" type="text" class="timepicker">
+                <input id="matchTime" type="text" class="timepicker" value=<?= matchTime ?>>
                 <label for="matchTime">Čas:</label>
             </div>
             <div class="input-field col s12">
                 <i class="material-icons prefix">place</i>
-                <input id="lblPlace" type="text" class="validate">
+                <input id="lblPlace" type="text" class="validate" value=<?= matchPlace ?>>
                 <label for="lblPlace">Místo:</label>
             </div>
             <div class="input-field col s12">
@@ -40,7 +43,9 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             var dates = document.querySelectorAll('.datepicker');
-            var dateInstances = M.Datepicker.init(dates);
+            var dateInstances = M.Datepicker.init(dates, {
+                setDefaultDate:true
+            });
             var times = document.querySelectorAll('.timepicker');
             var timeInstances = M.Timepicker.init(times, {
                 twelveHour: false

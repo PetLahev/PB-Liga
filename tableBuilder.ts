@@ -54,6 +54,10 @@ class TableBuilder {
         }
     }
 
+    get allTeams(): Team[] {
+        return this.teams;
+    }
+
     /**
      * Parses all the matches and stores all required information about each team
      * and its result. Then performs calculation to determine position of each team
@@ -62,18 +66,9 @@ class TableBuilder {
     buildTable(): void {
 
         if (this.initError) return;
-        let error: boolean = false;
-        try {
-            let draw = this.wkb.getRangeByName(DRAW).getValues();
-            this.matches = [];
-            for (let index = 0; index < draw.length; index++) {
-                this.matches.push(new Match(draw[index]));
-            }
-        } catch (ex) {
-            Logger.log('CHYBA: Nelze parsovat rozpis zapasu!');
-            error = true;
-        }
-        if (error) return;
+        let matches = new Matches(this.wkb);
+        this.matches = matches.matches;
+        if (this.matches.length == 0) return;
 
         // collect info for each team
         this.collectTeamsInfo();
