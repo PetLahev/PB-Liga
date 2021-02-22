@@ -1,19 +1,5 @@
 
 /**
- * A defined name that stores all teams and their groups.
- */
-const TEAMS: string = "Tymy";
-/**
- * A defined name that points to the draw of matches.
- */
-const DRAW: string = "Zapasy";
-
-/**
- * Prefix of a defined name for a table. The group letter must be added
- */
-const TABLE_PREFIX: string = "Tabulka";
-
-/**
  * Performs all required steps to build a result table.
  */
 class TableBuilder {
@@ -32,26 +18,9 @@ class TableBuilder {
     constructor(workbook: any) {
         let teamsRng: any;
         this.wkb = workbook;
-        try {
-            teamsRng = this.wkb.getRangeByName(TEAMS);
-        } catch (ex) {
-            Logger.log('CHYBA: Nexistuje pojmenovana oblast "Tymy"');
-            this.initError = true;
-        }
-        if (this.initError) return;
-
-        let sheet = teamsRng.getSheet();
-        let numOfTeams = this.getNumOfTeams(teamsRng, sheet);
-        let teamsRange = this.getTeamFullRange(teamsRng, sheet, numOfTeams);
-        let teamsData: string[][] = teamsRange.getValues();
-        for (let index = 0; index < teamsData.length; index++) {
-            let teamInfo = teamsData[index];
-            if (!this.groups.includes(teamInfo[2])) {
-                this.groups.push(teamInfo[2]);
-            }
-            let team = new Team(teamInfo[0], teamInfo[1], teamInfo[2]);
-            this.teams.push(team);
-        }
+        let teamsInfo = new Teams(workbook);
+        this.teams = teamsInfo.teams;
+        this.groups = teamsInfo.groups;
     }
 
     get allTeams(): Team[] {

@@ -64,7 +64,7 @@
             data.push(mPlace.value);
             google.script.run.withSuccessHandler(onSuccess)
                 .withFailureHandler(onFailed)
-                .appendData(data);
+                .insertDateTimeAndPlace(data);
         }
 
         function onSuccess(msg) {

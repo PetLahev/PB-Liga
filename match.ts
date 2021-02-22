@@ -1,7 +1,3 @@
-/**
- * A string literal that represents a withdrawal of a match.
- */
-const WITHDRAWAL_STRING: string = "S";
 
 /**
  * Stores information about one match (one row).
@@ -10,6 +6,8 @@ class Match {
     matchFirstCol: string;
     matchOrder: string;
     round: string;
+    dateZoneString: string;
+    timeZoneString: string;
     matchDate: Date;
     matchTime: Date;
     place: string;
@@ -28,8 +26,18 @@ class Match {
         this.matchFirstCol = matchAddress;
         this.matchOrder = matchRow[0];
         this.round = matchRow[1];
+
         this.matchDate = matchRow[2];
+        this.dateZoneString = "GMT+1:00";
+        if (this.matchDate && this.matchDate.getTimezoneOffset() == -120) {
+            this.dateZoneString = "GMT+2:00";
+        }
+
         this.matchTime = matchRow[3];
+        this.timeZoneString = "GMT+1:00";
+        if (this.matchTime && this.matchTime.getTimezoneOffset() == -120) {
+            this.timeZoneString = "GMT+2:00";
+        }
         this.place = matchRow[4];
         this.homeTeam = matchRow[5];
         this.awayTeam = matchRow[7];
@@ -38,6 +46,7 @@ class Match {
         this.awayTeamScore = this.validateScore(matchRow[10]);
 
         this.sets = [];
+        // 12 first column for sets
         for (let index = 12; index < 21; index += 2) {
             if (matchRow[index] != "" && !isNaN(matchRow[index])) {
                 this.sets.push(Number(matchRow[index]));

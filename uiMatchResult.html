@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col s12">This div is 12-columns wide on all screen sizes</div>
+            <div class="col s6">
+                <h5><?= homeTeam ?>
+            </div>
+            <div class="col s6">
+                <h5><?= awayTeam ?>
+            </div>
+        </div>
+        <div class="row">
+            <div class="input-field col s6">
+                <select id="cboHomeTeam" required>
+                    <option value="" disabled selected>Zadejte skore</option>
+                    <? for(var i=0;i<score.length;i++) { ?>
+                        <option><?= score[i] ?></option>
+                    <? } ?>
+                </select>
+            </div>
+            <div class="input-field col s6">
+                <select id="cboAwayTeam" required>
+                    <option value="" disabled selected>Zadejte skore</option>
+                    <? for(var i=0;i<score.length;i++) { ?>
+                        <option><?= score[i] ?></option>
+                    <? } ?>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="input-field col s12">
+                <button id="btnSubmit" class="waves-effect waves-light btn red"><i
+                    class="material-icons left">save</i>Uložit</button>
+            </div>
+        </div>
+    </div>
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+
+document.addEventListener('DOMContentLoaded', function () {
+            var selects = document.querySelectorAll('select');
+            var selectInstances = M.FormSelect.init(selects);
+        });
+
+        var home = document.getElementById('cboHomeTeam');
+        var away = document.getElementById('cboAwayTeam');
+
+        document.getElementById('btnSubmit').addEventListener("click", onSubmit);
+        function onSubmit() {
+            console.log('On submit');
+            if (home == null || home == "", away == null || away == "") {
+                alert("Please Fill All Required Field");
+                return false;
+            }
+
+            var data = [];
+            data.push(home.value);
+            data.push(away.value);
+            google.script.run.withSuccessHandler(onSuccess)
+                .withFailureHandler(onFailed)
+                .validateScore(data);
+        }
+
+        function onSuccess(msg) {
+            if (msg) alert(msg);
+        }
+
+        function onFailed(errors) {
+            alert(errors.toString());
+        }
+
+    </script>
+</body>
+
+</html>
