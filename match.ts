@@ -29,14 +29,22 @@ class Match {
 
         this.matchDate = matchRow[2];
         this.dateZoneString = "GMT+1:00";
-        if (this.matchDate && this.matchDate.getTimezoneOffset() == -120) {
-            this.dateZoneString = "GMT+2:00";
+        try {
+            if (this.matchDate && this.matchDate.getTimezoneOffset() == -120) {
+                this.dateZoneString = "GMT+2:00";
+            }
+        } catch (error) {
+            Logger.log('CHYBA: Neplatne datum! ' + this.matchDate);
         }
 
         this.matchTime = matchRow[3];
         this.timeZoneString = "GMT+1:00";
-        if (this.matchTime && this.matchTime.getTimezoneOffset() == -120) {
-            this.timeZoneString = "GMT+2:00";
+        try {
+            if (this.matchTime && this.matchTime.getTimezoneOffset() == -120) {
+                this.timeZoneString = "GMT+2:00";
+            }
+        } catch (error) {
+            Logger.log('CHYBA: Neplatny cas! ' + this.matchDate);
         }
         this.place = matchRow[4];
         this.homeTeam = matchRow[5];
