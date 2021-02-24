@@ -49,9 +49,9 @@ class Match {
         this.place = matchRow[4];
         this.homeTeam = matchRow[5];
         this.awayTeam = matchRow[7];
-        this.score = matchRow[8] + ':' + matchRow[10];
-        this.homeTeamScore = this.validateScore(matchRow[8]);
-        this.awayTeamScore = this.validateScore(matchRow[10]);
+        this.score = matchRow[HOME_SCORE_COL -1] + ':' + matchRow[AWAY_SCORE_COL -1];
+        this.homeTeamScore = this.validateScore(matchRow[HOME_SCORE_COL -1]);
+        this.awayTeamScore = this.validateScore(matchRow[AWAY_SCORE_COL -1]);
 
         this.sets = [];
         // 12 first column for sets

@@ -6,14 +6,18 @@ function showMatchInfoForm() {
     let wkb = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = wkb.getSheetByName(SHEET_DRAW);
     if (wkb.getActiveSheet().getName() != sheet.getName()) {
-        SpreadsheetApp.getUi().alert("Nejdříve vyberte zápas!");
+        SpreadsheetApp.getUi().alert(MSG_NO_MATCH);
         return;
     }
 
     let cellRow = sheet.getCurrentCell().getRowIndex();
     let match = new Matches(wkb).getMatchByAddress(cellRow);
     if (!match) {
-        SpreadsheetApp.getUi().alert("Nejdříve vyberte zápas!");
+        SpreadsheetApp.getUi().alert(MSG_NO_MATCH);
+        return;
+    }
+    else if (match.homeTeam.length == 0 || match.awayTeam.length == 0 ) {
+        SpreadsheetApp.getUi().alert(MSG_NO_TEAMS);
         return;
     }
 

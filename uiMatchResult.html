@@ -13,12 +13,17 @@
 <body>
     <div class="container">
         <div class="row">
-            <div class="col s12">This div is 12-columns wide on all screen sizes</div>
-            <div class="col s6">
-                <h5><?= homeTeam ?>
+            <div class="col s12">
+                <h6>
+                    <?= matchInfo ?>
             </div>
             <div class="col s6">
-                <h5><?= awayTeam ?>
+                <h5>
+                    <?= homeTeam ?>
+            </div>
+            <div class="col s6">
+                <h5>
+                    <?= awayTeam ?>
             </div>
         </div>
         <div class="row">
@@ -26,7 +31,9 @@
                 <select id="cboHomeTeam" required>
                     <option value="" disabled selected>Zadejte skore</option>
                     <? for(var i=0;i<score.length;i++) { ?>
-                        <option><?= score[i] ?></option>
+                    <option>
+                        <?= score[i] ?>
+                    </option>
                     <? } ?>
                 </select>
             </div>
@@ -34,7 +41,9 @@
                 <select id="cboAwayTeam" required>
                     <option value="" disabled selected>Zadejte skore</option>
                     <? for(var i=0;i<score.length;i++) { ?>
-                        <option><?= score[i] ?></option>
+                    <option>
+                        <?= score[i] ?>
+                    </option>
                     <? } ?>
                 </select>
             </div>
@@ -42,7 +51,7 @@
         <div class="row">
             <div class="input-field col s12">
                 <button id="btnSubmit" class="waves-effect waves-light btn red"><i
-                    class="material-icons left">save</i>Uložit</button>
+                        class="material-icons left">save</i>Uložit</button>
             </div>
         </div>
     </div>
@@ -50,9 +59,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
 
-document.addEventListener('DOMContentLoaded', function () {
-            var selects = document.querySelectorAll('select');
-            var selectInstances = M.FormSelect.init(selects);
+        document.addEventListener('DOMContentLoaded', function () {
+            var selectHome = document.querySelector('#cboHomeTeam');
+            var homeInstance = M.FormSelect.init(selectHome);
+
+            var selectAway = document.querySelector('#cboAwayTeam');
+            var awayInstance = M.FormSelect.init(selectAway);
+
+            M.FormSelect.init(selectHome);
+            M.FormSelect.init(selectAway);
         });
 
         var home = document.getElementById('cboHomeTeam');
@@ -61,9 +76,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('btnSubmit').addEventListener("click", onSubmit);
         function onSubmit() {
             console.log('On submit');
-            if (home == null || home == "", away == null || away == "") {
-                alert("Please Fill All Required Field");
-                return false;
+            var validationText = validateInput();
+            if (validationText != '') {
+                M.toast({ html: validationText, displayLength: 2000 });
+                return;
             }
 
             var data = [];
@@ -74,12 +90,39 @@ document.addEventListener('DOMContentLoaded', function () {
                 .validateScore(data);
         }
 
+        function validateInput() {
+            console.log(home.value + ':' + away.value);
+            var retVal = '';
+            if (home.value == null || home.value == "", away.value == null || away.value == "") {
+                retVal = 'Prosím zadejte výsledek pro oba týmy!';
+            }
+            else if (home.value == 'S' && away.value == 'S') {
+                retVal = ''; // valid situation
+            }
+            else {
+                var hScore = Number(home.value);
+                console.log('hScore: ' + hScore);
+                var aScore = Number(away.value);
+                console.log('aScore: ' + aScore);
+                if ((isNaN(hScore) || hScore < 3) && (isNaN(aScore) || aScore < 3)) {
+                    retVal = 'Alespoň jeden tým musí mít vyhrát 3 sety!';
+                }
+                else if (hScore == 3 && aScore == 3) {
+                    retVal = 'Oba týmy nemůžou vyhrát 3 sety!';
+                }
+            }
+            console.log(retVal);
+            return retVal;
+        }
+
         function onSuccess(msg) {
-            if (msg) alert(msg);
+            console.log('About to close the dialog');
+            google.script.host.close();
         }
 
         function onFailed(errors) {
-            alert(errors.toString());
+            var toastHTML = errors.toString();
+            M.toast({ html: toastHTML });
         }
 
     </script>
